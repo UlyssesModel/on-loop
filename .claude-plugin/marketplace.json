@@ -1,11 +1,13 @@
 {
   "name": "on-loop-marketplace",
-  "description": "Spec-driven SDLC plugin marketplace for Claude Code",
+  "owner": {
+    "name": "joestein"
+  },
   "plugins": [
     {
       "name": "on-loop",
       "description": "Spec-driven SDLC loop with orchestrated specialist agents",
-      "source": ".",
+      "source": "./",
       "version": "0.1.0"
     }
   ]
