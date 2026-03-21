@@ -16,10 +16,21 @@ Each phase is handled by a specialist agent operating as a Staff Engineer with I
 
 ### Option 1: Marketplace (recommended)
 
+Add the on-loop marketplace, then install the plugin:
+
 ```
-/plugin marketplace add your-org/on-loop
+/plugin marketplace add git@github.com:joestein/plugin-testing.git
+```
+
+This registers the marketplace from the repo's `marketplace.json`. Then install the plugin:
+
+```
 /plugin install on-loop
 ```
+
+That's it — all `/on-loop` commands are now available in your Claude Code sessions.
+
+> **How it works**: The `marketplace.json` at the repo root declares available plugins. When you run `/plugin marketplace add`, Claude Code fetches this manifest and makes the listed plugins available for install. `/plugin install` then activates the plugin, loading its commands, agents, skills, and hooks.
 
 ### Option 2: Clone to plugins directory
 
