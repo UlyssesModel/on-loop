@@ -75,7 +75,14 @@ During INIT, before any other work:
 
 ## Workspace Initialization
 
-On INIT, create:
+On INIT, first ensure `.on-loop/` is gitignored in the target project:
+
+1. Check if `.gitignore` exists in the project root
+2. If it exists, check if it already contains `.on-loop/`
+3. If not present, append `.on-loop/` to the `.gitignore`
+4. If `.gitignore` doesn't exist, create it with `.on-loop/` as its content
+
+Then create the workspace:
 
 ```
 .on-loop/

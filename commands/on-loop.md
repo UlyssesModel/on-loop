@@ -42,45 +42,49 @@ When this command is invoked:
    - If on `main` or `master`: create and checkout `on-loop/<slugified-prompt>` (lowercase, hyphens, max 50 chars)
    - If already on a feature branch: stay on it
 
-3. Initialize the `.on-loop/` workspace:
+3. Ensure `.on-loop/` is in the project's `.gitignore`:
+   - If `.gitignore` exists but doesn't contain `.on-loop/`, append it
+   - If `.gitignore` doesn't exist, create it with `.on-loop/` as content
+
+4. Initialize the `.on-loop/` workspace:
    - Create `.on-loop/` directory with `agent-notes/` subdirectory
    - Create `state.json` with phase `"INIT"`, the user's prompt, and `"branch"` set to current branch name
    - Create empty `plan.md` and `changes.log`
 
-4. Dispatch the **architect agent** (`agents/architect.md`):
+5. Dispatch the **architect agent** (`agents/architect.md`):
    - Provide the user's prompt
    - The architect writes the spec to `.on-loop/agent-notes/architect.md`
 
-5. Write `plan.md` based on the architect's spec output.
+6. Write `plan.md` based on the architect's spec output.
 
-6. Update `state.json` to phase `"CODE"` and dispatch the **coding agent** (`agents/coding.md`):
+7. Update `state.json` to phase `"CODE"` and dispatch the **coding agent** (`agents/coding.md`):
    - Provide `plan.md` and architect's notes
 
-7. Update to phase `"TEST"` and dispatch the **testing agent** (`agents/testing.md`):
+8. Update to phase `"TEST"` and dispatch the **testing agent** (`agents/testing.md`):
    - Provide `plan.md`, architect's notes, and coding agent's notes
    - If tests fail and retries remain (max 3), go back to CODE with test feedback
    - If retries exhausted, record TODOs and continue
 
-8. Update to phase `"SECURITY"` and dispatch the **security agent** (`agents/security.md`):
+9. Update to phase `"SECURITY"` and dispatch the **security agent** (`agents/security.md`):
    - Provide all prior agent notes
    - If CRITICAL/HIGH findings and retries remain (max 2), go back to CODE with security feedback
    - If retries exhausted, record TODOs and continue
 
-9. Update to phase `"DOC"` and `"BUILD"` — dispatch **documentation** (`agents/documentation.md`) and **build** (`agents/build.md`) agents in parallel.
+10. Update to phase `"DOC"` and `"BUILD"` — dispatch **documentation** (`agents/documentation.md`) and **build** (`agents/build.md`) agents in parallel.
 
-10. Update to phase `"REVIEW"` and dispatch the **reviewer agent** (`agents/reviewer.md`):
+11. Update to phase `"REVIEW"` and dispatch the **reviewer agent** (`agents/reviewer.md`):
     - Provide all agent notes
     - If REQUEST_CHANGES and retries remain (max 2), go back to CODE with review feedback
     - If retries exhausted, record TODOs and continue
 
-11. Update to phase `"GIT"` (orchestrator handles directly):
+12. Update to phase `"GIT"` (orchestrator handles directly):
     - Stage all modified/created files from `changes.log` (explicit paths, not `git add -A`)
     - Commit with a descriptive message summarizing the work, ending with `Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>`
     - Push branch to origin with `-u` flag
     - Create PR via `gh pr create` with title from prompt and body with summary, files changed, test results, security findings, TODOs
     - Store PR URL in `state.json` as `"pr_url"`
 
-12. Update to phase `"COMPLETE"`:
+13. Update to phase `"COMPLETE"`:
     - Print a summary of what was built
     - List files created/modified
     - Report test results
