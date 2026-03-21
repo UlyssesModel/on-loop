@@ -188,6 +188,12 @@ cython_debug/
 #  you could uncomment the following to ignore the entire vscode folder
 # .vscode/
 
+# On-Loop workspace (ephemeral, per-run)
+.on-loop/
+
+# Claude Code worktrees
+.claude/worktrees/
+
 # Ruff stuff:
 .ruff_cache/
 
