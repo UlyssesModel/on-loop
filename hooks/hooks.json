@@ -1,0 +1,17 @@
+{
+  "hooks": [
+    {
+      "name": "on-loop-active-reminder",
+      "description": "Reminds the user about an active on-loop run when the agent stops",
+      "event": "Stop",
+      "command": "if [ -f .on-loop/state.json ]; then phase=$(python3 -c \"import json; d=json.load(open('.on-loop/state.json')); print(d.get('phase','UNKNOWN'))\" 2>/dev/null); if [ \"$phase\" != 'COMPLETE' ] && [ \"$phase\" != 'FAILED' ] && [ -n \"$phase\" ]; then echo \"⚠️  Active on-loop run detected (phase: $phase). Use /on-loop-status to check progress or /on-loop-resume to continue.\"; fi; fi"
+    },
+    {
+      "name": "on-loop-change-tracker",
+      "description": "Tracks file modifications during an active on-loop run",
+      "event": "PostToolUse",
+      "tools": ["Write", "Edit"],
+      "command": "if [ -f .on-loop/state.json ]; then TOOL_NAME=\"$CLAUDE_TOOL_NAME\"; FILE_PATH=\"$CLAUDE_FILE_PATH\"; if [ -n \"$FILE_PATH\" ] && [ -f .on-loop/changes.log ]; then TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ); AGENT=$(python3 -c \"import json; d=json.load(open('.on-loop/state.json')); print(d.get('current_agent','unknown'))\" 2>/dev/null); ACTION='MODIFY'; if [ \"$TOOL_NAME\" = 'Write' ]; then ACTION='CREATE'; fi; echo \"[$TIMESTAMP] $AGENT $ACTION $FILE_PATH — tracked by hook\" >> .on-loop/changes.log; fi; fi"
+    }
+  ]
+}
