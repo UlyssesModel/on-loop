@@ -19,7 +19,7 @@ Each phase is handled by a specialist agent operating as a Staff Engineer with I
 Add the on-loop marketplace, then install the plugin:
 
 ```
-/plugin marketplace add git@github.com:joestein/plugin-testing.git
+/plugin marketplace add joestein/on-loop
 ```
 
 This registers the marketplace from the repo's `marketplace.json`. Then install the plugin:
