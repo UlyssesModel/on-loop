@@ -16,6 +16,13 @@ Spec-driven SDLC plugin that orchestrates specialist agents through a full devel
 - `/on-build <target>` — Standalone build/CI setup
 - `/on-review <target>` — Standalone code review
 
+### Roadmap Commands (Multi-Session)
+
+- `/on-prepare <prompt>` — Generate a roadmap with phases, steps, and acceptance criteria from a full prompt
+- `/on-plan [feature-slug]` — Read roadmap, produce detailed implementation plan with parallelism annotations
+- `/on-continue [feature-slug]` — Pick up next available step and execute through agent pipeline
+- `/on-pause [feature-slug]` — Release locks, commit WIP, write handoff summary
+
 ## Architecture
 
 All agents communicate through the `.on-loop/` workspace directory (gitignored):
@@ -44,3 +51,21 @@ All agents operate as Staff Engineers with ISC2 certifications targeting regulat
 ## Workspace Convention
 
 The `.on-loop/` directory is ephemeral and gitignored. Never commit its contents. Each `/on-loop` invocation initializes a fresh workspace.
+
+## Roadmap Convention
+
+The `roadmap/` directory is persistent and committed to the repo. It contains:
+- `roadmap/<feature>.md` — Roadmap documents with phases, steps, mermaid diagrams
+- `roadmap/.state/<feature>.json` — State tracking per feature (phase/step status, locks)
+- `roadmap/.state/_global.json` — Cross-session coordination (active sessions, global locks)
+
+Multiple sessions can work on the same feature concurrently using `/on-continue`. File-based locking with TTL prevents conflicts.
+
+## Skills
+
+| Skill | Purpose |
+|-------|---------|
+| `skills/roadmap-state/` | State file operations: init, read, transition, step tracking |
+| `skills/roadmap-lock/` | Lock acquisition, release, heartbeat, stale detection |
+| `skills/quality-gate/` | Pass/fail criteria for phase transitions |
+| `skills/loop-state/` | On-loop phase state transitions and validation |
