@@ -74,21 +74,57 @@ Check GitHub CI status for a PR, classify failures as regressions vs pre-existin
 
 2. Parse the output to determine the status of each check (pass, fail, pending).
 
-3. **If any checks are pending**, STOP and report:
-   ```
-   On-Loop Check
-   =============
-   PR:      #<number> -- <title>
-   Branch:  <branch>
-   Status:  PENDING -- CI checks still running
+3. **If any checks are pending**, enter a polling loop to wait for completion:
 
-   Pending checks:
-     [PENDING] <check-name>
+   a. Report initial status:
+      ```
+      On-Loop Check
+      =============
+      PR:      #<number> -- <title>
+      Branch:  <branch>
+      Status:  PENDING -- CI checks still running
 
-   Wait for checks to complete, then re-run /on-loop-check.
-   ```
+      Waiting for CI checks to complete...
+      ```
 
-4. **If ALL checks pass**, go to **Step 6: Success Path**.
+   b. Start polling loop (max 20 cycles = 10 minutes):
+      ```
+      POLL_COUNT=0
+      MAX_POLLS=20
+      ```
+
+   c. Every 30 seconds, re-run `gh pr checks <pr-number>` and parse the output:
+      - Count total checks, passed checks, failed checks, and pending checks
+      - Report progress each cycle:
+        ```
+        Waiting for CI... (<passed>/<total> checks complete, elapsed: <seconds>s)
+        ```
+      - If any check has **failed**, exit the polling loop immediately and proceed to **Step 4: Classify Failures** (no need to wait for remaining checks)
+      - If ALL checks have **passed**, exit the polling loop and proceed to **Step 6: Success Path**
+      - If checks are still pending and `POLL_COUNT < MAX_POLLS`, wait 30 seconds and poll again
+
+   d. If the polling loop reaches 20 cycles (10 minutes) with checks still pending, STOP and report:
+      ```
+      On-Loop Check
+      =============
+      PR:      #<number> -- <title>
+      Branch:  <branch>
+      Status:  TIMEOUT -- CI checks did not complete within 10 minutes
+
+      Completed checks:
+        [PASS] <check-name>
+
+      Still pending:
+        [PENDING] <check-name>
+        [PENDING] <check-name>
+
+      The following checks are still running after 10 minutes.
+      Investigate whether CI is stalled or if these checks have unusually long runtimes.
+      Re-run /on-loop-check when checks complete.
+      ```
+      Do not proceed to classification or fixing on timeout.
+
+4. **If ALL checks pass** (either immediately or after polling), go to **Step 6: Success Path**.
 
 5. **If any checks fail**, proceed to **Step 4: Classify Failures**.
 
@@ -243,24 +279,24 @@ For each failed check:
 3. **Version Bump** (idempotent):
    - Read `.claude-plugin/plugin.json`. Check the current `"version"` value.
    - Read `.claude-plugin/marketplace.json`. Check the current `"version"` value in the plugins array.
-   - **If both are already `"0.4.0"`**, skip the bump and report:
+   - **If both are already `"0.5.0"`**, skip the bump and report:
      ```
-     Version already at 0.4.0 -- no bump needed.
+     Version already at 0.5.0 -- no bump needed.
      ```
-   - **If either is `"0.3.0"`**, update both files:
-     - In `.claude-plugin/plugin.json`: change `"version": "0.3.0"` to `"version": "0.4.0"`
-     - In `.claude-plugin/marketplace.json`: change `"version": "0.3.0"` to `"version": "0.4.0"` (in the plugins array entry)
+   - **If either is `"0.4.0"`**, update both files:
+     - In `.claude-plugin/plugin.json`: change `"version": "0.4.0"` to `"version": "0.5.0"`
+     - In `.claude-plugin/marketplace.json`: change `"version": "0.4.0"` to `"version": "0.5.0"` (in the plugins array entry)
    - Stage and commit:
      ```bash
      git add .claude-plugin/plugin.json .claude-plugin/marketplace.json
-     git commit -m "Bump plugin version to 0.4.0
+     git commit -m "Bump plugin version to 0.5.0
 
      Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>"
      git push
      ```
    - Report:
      ```
-     Version bumped: 0.3.0 -> 0.4.0
+     Version bumped: 0.4.0 -> 0.5.0
        .claude-plugin/plugin.json
        .claude-plugin/marketplace.json
      ```

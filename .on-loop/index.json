@@ -13,6 +13,19 @@
       "worktree_path": ".claude/worktrees/on-loop-check",
       "session_dir": ".on-loop/sessions/20260426_083441_on-loop-check",
       "pr_url": null
+    },
+    {
+      "session_id": "1e04bac7-1e23-486b-8de1-74fb322611e4",
+      "session_name": "20260426_100540_on-loop-debug-fix",
+      "loop_id": "1e04bac7-1e23-486b-8de1-74fb322611e4",
+      "prompt": "Create /on-loop-debug-fix: dual-mode debug command with smart orchestration scaling",
+      "branch": "on-loop/on-loop-debug-fix",
+      "status": "active",
+      "started_at": "2026-04-26T10:05:40Z",
+      "completed_at": null,
+      "worktree_path": ".claude/worktrees/on-loop-debug-fix",
+      "session_dir": ".on-loop/sessions/20260426_100540_on-loop-debug-fix",
+      "pr_url": null
     }
   ]
 }
