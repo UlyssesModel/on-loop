@@ -7,10 +7,12 @@ Spec-driven SDLC plugin for [Claude Code](https://docs.anthropic.com/en/docs/cla
 `/on-loop` takes a prompt and runs it through a complete software development pipeline:
 
 ```
-Prompt → Branch → Spec → Plan → Code → Test → Security → Docs + Build → Review → Commit + Push + PR → Done
+Prompt → Worktree → Branch → Spec → Plan → Code → Test → Security → Docs + Build → Review → Commit + Push + PR → Done
 ```
 
 Each phase is handled by a specialist agent operating as a Staff Engineer with ISC2 certifications, building for regulated financial environments and critical infrastructure.
+
+Each session operates in its own **git worktree**, so multiple sessions can run concurrently on the same repo without interference. Session logs are persisted in the repo as an audit trail.
 
 ## Installation
 
@@ -54,9 +56,9 @@ Clone or copy into your project and reference it in your project's Claude Code c
 | Command | Description |
 |---------|-------------|
 | `/on-loop <prompt>` | Run full SDLC loop with all agents |
-| `/on-loop-status` | Check progress of current loop |
-| `/on-loop-resume [--from=phase]` | Resume an interrupted loop |
-| `/on-loop:clear` | Clean up workspace, switch to main, pull latest |
+| `/on-loop-status` | Check progress of current and past sessions |
+| `/on-loop-resume [--from=phase] [--session=<id>]` | Resume an interrupted loop |
+| `/on-loop:clear [--include-logs]` | Clean up worktrees, optionally remove session logs |
 | `/on-loop:main-resolve` | Pull main, merge into branch, resolve conflicts |
 | `/on-spec <description>` | Standalone spec generation |
 | `/on-test <target>` | Standalone test generation |
@@ -65,11 +67,20 @@ Clone or copy into your project and reference it in your project's Claude Code c
 | `/on-build <target>` | Standalone build/CI setup |
 | `/on-review <target>` | Standalone code review |
 
+### Roadmap Commands (Multi-Session)
+
+| Command | Description |
+|---------|-------------|
+| `/on-prepare <prompt>` | Generate a roadmap with phases, steps, and acceptance criteria |
+| `/on-plan [feature-slug]` | Read roadmap, produce detailed implementation plan |
+| `/on-continue [feature-slug]` | Pick up next available step and execute through agent pipeline |
+| `/on-pause [feature-slug]` | Release locks, commit WIP, write handoff summary |
+
 ## Agents
 
 | Agent | Model | Role |
 |-------|-------|------|
-| Orchestrator | Opus | Pipeline control, quality gates, retry logic |
+| Orchestrator | Opus | Pipeline control, quality gates, retry logic, worktree/session lifecycle |
 | Architect | Opus | Spec generation, ADRs, system design |
 | Coding | Opus | Implementation with security-first practices |
 | Testing | Sonnet | Unit, integration, and E2E tests |
@@ -82,29 +93,50 @@ Clone or copy into your project and reference it in your project's Claude Code c
 
 ```mermaid
 graph TD
-    START["/on-loop prompt"] --> INIT["INIT: Branch + workspace setup"]
-    INIT --> SPEC["SPEC: Architect Agent"]
+    START["/on-loop prompt"] --> INIT["INIT: Session + Worktree + Branch"]
+    INIT --> SPEC["SPEC: Architect Agent (in worktree)"]
     SPEC --> PLAN["PLAN: Orchestrator writes plan"]
-    PLAN --> CODE["CODE: Coding Agent"]
-    CODE --> TEST["TEST: Testing Agent"]
-    TEST -->|Pass| SEC["SECURITY: Security Agent"]
+    PLAN --> CODE["CODE: Coding Agent (in worktree)"]
+    CODE --> TEST["TEST: Testing Agent (in worktree)"]
+    TEST -->|Pass| SEC["SECURITY: Security Agent (in worktree)"]
     TEST -->|"Fail (max 3x)"| CODE
-    SEC -->|Pass| PAR["DOC + BUILD (parallel)"]
+    SEC -->|Pass| PAR["DOC + BUILD (parallel, in worktree)"]
     SEC -->|"Blockers (max 2x)"| CODE
-    PAR --> REVIEW["REVIEW: Reviewer Agent"]
-    REVIEW -->|Approve| GIT["GIT: Commit + Push + PR"]
+    PAR --> REVIEW["REVIEW: Reviewer Agent (in worktree)"]
+    REVIEW -->|Approve| GIT["GIT: Commit + Push + PR (from worktree)"]
     REVIEW -->|"Changes (max 2x)"| CODE
-    GIT --> DONE["COMPLETE: Summary + PR link"]
+    GIT --> DONE["COMPLETE: Summary + PR link + Worktree cleanup"]
 ```
 
-### Inter-Agent Communication
+### Worktree Isolation
 
-Agents communicate through the `.on-loop/` workspace directory (gitignored):
+Each session creates a git worktree at `.claude/worktrees/<branch-slug>/`, providing an independent working directory. This means:
 
-- `state.json` — Phase tracking (only orchestrator writes)
-- `plan.md` — Implementation plan (all agents read)
-- `changes.log` — Append-only file modification log
-- `agent-notes/<agent>.md` — Structured output per agent
+- Multiple `/on-loop` sessions can run concurrently on the same repo
+- The user's working directory is never modified during a loop run
+- Each session has its own branch and isolated file state
+- Worktrees share the git object store, so they are space-efficient
+
+### Session Logs
+
+Each session persists its state under `.on-loop/sessions/<YYYYMMDD_HHMMSS_branch-slug>/`:
+
+```
+.on-loop/
+├── index.json                  # Manifest of all sessions
+└── sessions/
+    ├── 20260426_143052_user-management-api/
+    │   ├── state.json          # Phase tracking
+    │   ├── plan.md             # Implementation plan
+    │   ├── changes.log         # File modification log
+    │   └── agent-notes/        # Per-agent structured output
+    └── 20260426_150311_auth-middleware/
+        └── ...
+```
+
+Session directories are named with timestamps for chronological sorting and branch slugs for human readability.
+
+Session directories are committed to the repo as audit logs, providing a record of what the AI agents did, decided, and found.
 
 ### Quality Gates
 
@@ -112,13 +144,13 @@ Each phase transition is validated:
 
 | Transition | Key Criteria |
 |-----------|--------------|
-| CODE → TEST | Code compiles, no self-reported critical issues |
-| TEST → SECURITY | All tests pass |
-| SECURITY → DOC/BUILD | No critical/high security findings |
-| REVIEW → GIT | Reviewer approves |
-| GIT → COMPLETE | Commit, push, PR created |
+| CODE -> TEST | Code compiles, no self-reported critical issues |
+| TEST -> SECURITY | All tests pass |
+| SECURITY -> DOC/BUILD | No critical/high security findings |
+| REVIEW -> GIT | Reviewer approves |
+| GIT -> COMPLETE | Commit, push, PR created |
 
-Failed gates trigger retries (TEST→CODE: 3x, SECURITY→CODE: 2x, REVIEW→CODE: 2x). After exhaustion, issues are recorded as TODOs and the pipeline continues.
+Failed gates trigger retries (TEST->CODE: 3x, SECURITY->CODE: 2x, REVIEW->CODE: 2x). After exhaustion, issues are recorded as TODOs and the pipeline continues.
 
 ## Agent Persona
 
@@ -140,6 +172,18 @@ Compliance awareness: SOC2, PCI-DSS, NIST 800-53, ISO 27001, GDPR.
 /on-loop Create a REST API for user management with JWT authentication, role-based access control, and PostgreSQL storage
 ```
 
+### Concurrent Sessions
+
+```
+# Terminal 1
+/on-loop Add user registration with email verification
+
+# Terminal 2 (same repo, different Claude Code session)
+/on-loop Add password reset flow with OTP
+```
+
+Each runs in its own worktree — no conflicts.
+
 ### Standalone Commands
 
 ```
@@ -152,21 +196,30 @@ Compliance awareness: SOC2, PCI-DSS, NIST 800-53, ISO 27001, GDPR.
 ### Resume After Interruption
 
 ```
-/on-loop-status                  # Check where it stopped
-/on-loop-resume                  # Resume from last phase
-/on-loop-resume --from=TEST      # Resume from a specific phase
+/on-loop-status                           # Check all sessions
+/on-loop-resume                           # Resume most recent active/failed session
+/on-loop-resume --session=20260426_143052_user-api --from=TEST  # Resume specific session
+```
+
+### Cleanup
+
+```
+/on-loop:clear                  # Remove worktrees, keep session logs
+/on-loop:clear --include-logs   # Remove everything
 ```
 
 ## Project Structure
 
 ```
 on-loop/
-├── .claude-plugin/plugin.json   # Plugin metadata
+├── .claude-plugin/plugin.json   # Plugin metadata (v0.3.0)
+├── .on-loop/                    # Session logs (committed to repo)
+│   ├── index.json               # Session manifest
+│   └── sessions/                # Per-session state and agent notes
 ├── hooks/hooks.json             # Stop + PostToolUse hooks
-├── marketplace.json            # Marketplace manifest
-├── commands/                    # 11 user-invocable commands
+├── commands/                    # 15 user-invocable commands
 ├── agents/                      # 8 specialist agent definitions
-├── skills/                      # Loop state + quality gate skills
+├── skills/                      # Loop state + quality gate + roadmap skills
 ├── shared/                      # Shared persona, protocols, standards
 ├── CLAUDE.md                    # Plugin instructions
 ├── README.md                    # This file

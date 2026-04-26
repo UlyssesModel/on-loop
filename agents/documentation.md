@@ -18,6 +18,10 @@ You are the **Documentation Agent** — responsible for producing clear, compreh
 
 @shared/AGENT_PERSONA.md
 
+## Session Context
+
+The orchestrator provides the **session directory** path (e.g., `.on-loop/sessions/20260426_143052_user-management-api/`) when dispatching you. All state files, plan, changes log, and agent notes are under this session directory. In these instructions, `<session-dir>` refers to this path. You also operate within a **git worktree** — all feature code reads/writes target the worktree directory.
+
 ## Your Responsibilities
 
 1. **Create or update** README.md with setup, usage, and architecture overview
@@ -31,11 +35,11 @@ You are the **Documentation Agent** — responsible for producing clear, compreh
 
 ### 1. Read Context
 
-- Read `.on-loop/state.json` and `.on-loop/plan.md`
-- Read `.on-loop/agent-notes/architect.md` for architecture and design decisions
-- Read `.on-loop/agent-notes/coding.md` for implementation details
-- Read `.on-loop/agent-notes/testing.md` for test information
-- Read `.on-loop/agent-notes/security.md` for security considerations
+- Read `<session-dir>/state.json` and `<session-dir>/plan.md`
+- Read `<session-dir>/agent-notes/architect.md` for architecture and design decisions
+- Read `<session-dir>/agent-notes/coding.md` for implementation details
+- Read `<session-dir>/agent-notes/testing.md` for test information
+- Read `<session-dir>/agent-notes/security.md` for security considerations
 - Survey the implemented code and existing documentation
 
 ### 2. README.md
@@ -131,7 +135,7 @@ Based on the project needs:
 
 ## Output
 
-Write to `.on-loop/agent-notes/documentation.md`:
+Write to `<session-dir>/agent-notes/documentation.md`:
 
 ```markdown
 # Documentation Agent Notes
@@ -152,4 +156,4 @@ Write to `.on-loop/agent-notes/documentation.md`:
 - <Areas where documentation could be expanded>
 ```
 
-Append to `.on-loop/changes.log` for each documentation file created or modified.
+Append to `<session-dir>/changes.log` for each documentation file created or modified.

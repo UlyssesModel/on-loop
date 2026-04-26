@@ -16,7 +16,7 @@ The workhorse command. Reads the roadmap state, finds the next unclaimed and non
 /on-continue <feature-slug>   # specify which feature
 ```
 
-Multiple sessions can run `/on-continue` concurrently on the same repo. Each session picks up the next available step that does not conflict with any in-progress work.
+Multiple sessions can run `/on-continue` concurrently on the same repo. Each session picks up the next available step that does not conflict with any in-progress work. Each session operates in its own git worktree.
 
 ## Instructions
 
@@ -24,8 +24,9 @@ When this command is invoked:
 
 ### 1. Initialize Session
 
-1. Generate a session ID: `python3 -c "import uuid; print(str(uuid.uuid4()))"`
-2. Store the session ID for the duration of this execution
+1. Generate a session ID (UUID v4): `python3 -c "import uuid; print(str(uuid.uuid4()))"`
+2. Generate a session name: `YYYYMMDD_HHMMSS_<branch-slug>` (e.g., `20260426_143052_feature-slug-phase-1`)
+3. Store both for the duration of this execution
 
 ### 2. Identify the Roadmap
 
@@ -63,64 +64,79 @@ Following `skills/roadmap-lock/SKILL.md`:
 5. Verify lock with read-after-write
 6. If lock acquisition fails (race condition), back off and try the next eligible step
 
-### 5. Set Up Ephemeral Workspace
+### 5. Create Git Worktree
 
-Create or clean the `.on-loop/` workspace for this step's execution:
+Create an isolated worktree for this step's execution:
 
-1. Create `.on-loop/` directory with `agent-notes/` subdirectory
-2. Write `.on-loop/state.json` with:
-   - Phase: `"CODE"` (the step starts at code since the roadmap IS the spec/plan)
-   - Prompt: The step's description from the roadmap
+1. Determine the branch for this phase from the roadmap state (e.g., `feature/<slug>-phase-<N>`)
+2. Create branch if it doesn't exist: `git branch <branch-name>` (from current HEAD or phase base)
+3. Create worktree: `git worktree add .claude/worktrees/<branch-slug> <branch-name>`
+4. If the worktree already exists (e.g., from a prior failed attempt), reuse it
+
+### 6. Set Up Session Directory
+
+Create the session directory for this step's execution:
+
+1. Create `.on-loop/sessions/<session-name>/` with `agent-notes/` subdirectory
+2. Write `.on-loop/sessions/<session-name>/state.json` with:
+   - `version`: `"1.1"`
+   - `session_id`: the generated UUID
+   - `phase`: `"CODE"` (the step starts at code since the roadmap IS the spec/plan)
+   - `prompt`: The step's description from the roadmap
+   - `branch`: the branch name
+   - `worktree_path`: `.claude/worktrees/<branch-slug>`
+   - `session_dir`: `.on-loop/sessions/<session-name>`
    - Context: phase title, step number, feature name
-3. Write `.on-loop/plan.md` with:
+3. Write `.on-loop/sessions/<session-name>/plan.md` with:
    - The step's detailed description from the roadmap
    - Files to create/modify
    - Acceptance criteria from the phase
    - Any relevant context from other completed steps
-4. Create empty `.on-loop/changes.log`
+4. Create empty `.on-loop/sessions/<session-name>/changes.log`
+5. Update `.on-loop/index.json` with the new session entry
 
-### 6. Execute Agent Pipeline
+### 7. Execute Agent Pipeline
 
-Run the on-loop agent pipeline for this step. The pipeline is adapted for step-level execution:
+Run the on-loop agent pipeline for this step. All agents operate within the worktree directory.
 
-#### 6a. Coding Agent
+#### 7a. Coding Agent
 
 Dispatch the **coding agent** (`agents/coding.md`):
-- Provide the step plan from `.on-loop/plan.md`
+- Provide the step plan from the session's `plan.md`
 - Provide context about the broader feature from the roadmap
-- The coding agent implements the step
+- The coding agent implements the step in the worktree
 
 **Update heartbeat** after coding completes.
 
-#### 6b. Testing Agent
+#### 7b. Testing Agent
 
 Dispatch the **testing agent** (`agents/testing.md`):
-- Provide coding agent's notes
+- Provide coding agent's notes from the session directory
 - Focus tests on the specific files created/modified in this step
 - If tests fail and retry budget allows (max 2 retries for step-level), loop back to coding
 
 **Update heartbeat** after testing completes.
 
-#### 6c. Security Agent
+#### 7c. Security Agent
 
 Dispatch the **security agent** (`agents/security.md`):
-- Provide all prior agent notes
+- Provide all prior agent notes from the session directory
 - Focus security review on this step's files
 - If CRITICAL findings and retry budget allows (max 1 retry for step-level), loop back to coding
 
 **Update heartbeat** after security completes.
 
-#### 6d. Review Agent
+#### 7d. Review Agent
 
 Dispatch the **reviewer agent** (`agents/reviewer.md`):
-- Provide all agent notes
+- Provide all agent notes from the session directory
 - If REQUEST_CHANGES and retry budget allows (max 1 retry for step-level), loop back to coding
 
 **Update heartbeat** after review completes.
 
 Note: Documentation and build phases are skipped for individual steps. They are handled at the phase level when all steps complete, or via dedicated `/on-doc` and `/on-build` invocations.
 
-### 7. Mark Step Complete
+### 8. Mark Step Complete
 
 After successful pipeline execution:
 
@@ -133,27 +149,38 @@ After successful pipeline execution:
 4. Check if the phase is now complete (all steps done)
 5. If phase complete, update phase status
 
-### 8. Commit Step Work
+### 9. Commit Step Work
 
 After marking the step complete:
 
-1. Read `.on-loop/changes.log` for files modified
-2. Stage all modified/created files (explicit paths from changes.log)
-3. Commit with message: `feat(<feature-slug>): phase <N> step <M> - <step title>`
+1. `cd` to the worktree directory
+2. Read the session's `changes.log` for files modified
+3. Stage all modified/created files (explicit paths from changes.log)
+4. Also stage the session directory: `.on-loop/sessions/<session-name>/`
+5. Commit with message: `feat(<feature-slug>): phase <N> step <M> - <step title>`
    - End with `Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>`
-4. Also stage and commit the updated state file `roadmap/.state/<feature-slug>.json`
+6. Also stage and commit the updated state file `roadmap/.state/<feature-slug>.json`
 
-### 9. Handle Failure
+### 10. Clean Up Worktree
+
+After successful commit:
+
+1. Remove the worktree: `git worktree remove .claude/worktrees/<branch-slug>`
+2. Update `.on-loop/index.json` session status to `"complete"`
+
+### 11. Handle Failure
 
 If the agent pipeline fails:
 
 1. Mark the step as `failed` in the state file
 2. Release the lock
 3. Remove session from `_global.json`
-4. Report the failure with details
-5. The step will be available for retry on the next `/on-continue` invocation
+4. Update `.on-loop/index.json` session status to `"failed"`
+5. **Do NOT remove the worktree** (available for debugging or resume)
+6. Report the failure with details
+7. The step will be available for retry on the next `/on-continue` invocation
 
-### 10. Report
+### 12. Report
 
 Display to the user:
 - Which step was executed (phase N, step M, title)
@@ -170,10 +197,12 @@ Display to the user:
 When 3 sessions run `/on-continue` simultaneously:
 
 ```
-Session A: reads state -> picks step 1 -> locks step 1 -> executes -> completes
-Session B: reads state -> picks step 2 -> locks step 2 -> executes -> completes
-Session C: reads state -> step 1 locked, step 2 locked -> picks step 3 -> locks step 3 -> executes
+Session A: reads state -> picks step 1 -> locks step 1 -> creates worktree A -> executes -> completes -> removes worktree A
+Session B: reads state -> picks step 2 -> locks step 2 -> creates worktree B -> executes -> completes -> removes worktree B
+Session C: reads state -> step 1 locked, step 2 locked -> picks step 3 -> locks step 3 -> creates worktree C -> executes
 ```
+
+Each session has its own worktree and session directory. No interference.
 
 The lock check happens at acquisition time. If two sessions race for the same step, the read-after-write verification ensures only one proceeds.
 
@@ -192,8 +221,10 @@ This keeps individual step execution bounded in time.
 ## Important
 
 - Each `/on-continue` invocation handles exactly ONE step
-- The `.on-loop/` workspace is ephemeral per step (cleaned at start)
+- Each step gets its own worktree and session directory
+- Session directories persist as audit logs in the repo
 - State files in `roadmap/.state/` are the persistent record
 - Always commit after a successful step
 - Always release locks, even on failure
+- Worktrees are removed on success, left in place on failure
 - Heartbeat is updated between each agent phase

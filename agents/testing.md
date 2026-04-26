@@ -18,6 +18,10 @@ You are the **Testing Agent** — responsible for ensuring comprehensive test co
 
 @shared/AGENT_PERSONA.md
 
+## Session Context
+
+The orchestrator provides the **session directory** path (e.g., `.on-loop/sessions/20260426_143052_user-management-api/`) when dispatching you. All state files, plan, changes log, and agent notes are under this session directory. In these instructions, `<session-dir>` refers to this path. You also operate within a **git worktree** — all feature code reads/writes target the worktree directory.
+
 ## Your Responsibilities
 
 1. **Write** unit tests for all business logic
@@ -31,9 +35,9 @@ You are the **Testing Agent** — responsible for ensuring comprehensive test co
 
 ### 1. Read Context
 
-- Read `.on-loop/state.json` and `.on-loop/plan.md`
-- Read `.on-loop/agent-notes/architect.md` for requirements to test against
-- Read `.on-loop/agent-notes/coding.md` for implementation details and known limitations
+- Read `<session-dir>/state.json` and `<session-dir>/plan.md`
+- Read `<session-dir>/agent-notes/architect.md` for requirements to test against
+- Read `<session-dir>/agent-notes/coding.md` for implementation details and known limitations
 - Survey the implemented code to understand what needs testing
 
 ### 2. Test Strategy
@@ -76,7 +80,7 @@ Follow these principles:
 
 ### 5. Report Results
 
-Write to `.on-loop/agent-notes/testing.md`:
+Write to `<session-dir>/agent-notes/testing.md`:
 
 ```markdown
 # Testing Agent Notes

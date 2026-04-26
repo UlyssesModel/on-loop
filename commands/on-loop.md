@@ -20,7 +20,7 @@ Run a complete spec-driven software development lifecycle for the given prompt.
 
 Launches the **orchestrator agent** which drives the following pipeline:
 
-1. **INIT** — Creates `.on-loop/` workspace, creates feature branch if on main
+1. **INIT** — Creates git worktree, session directory, feature branch
 2. **SPEC** — Architect agent generates a detailed specification
 3. **PLAN** — Orchestrator writes an implementation plan
 4. **CODE** — Coding agent implements the spec
@@ -28,8 +28,8 @@ Launches the **orchestrator agent** which drives the following pipeline:
 6. **SECURITY** — Security agent audits the code (retries up to 2x on blockers)
 7. **DOC + BUILD** — Documentation and build agents run in parallel
 8. **REVIEW** — Reviewer agent performs final code review (retries up to 2x)
-9. **GIT** — Commit all changes, push branch, create PR
-10. **COMPLETE** — Summary of everything built with PR link
+9. **GIT** — Commit all changes from worktree, push branch, create PR
+10. **COMPLETE** — Summary of everything built with PR link, worktree cleanup
 
 ## Instructions
 
@@ -37,54 +37,82 @@ When this command is invoked:
 
 1. Read the user's argument. If it's a file path, read the file contents as the prompt.
 
-2. **Branch creation** (before workspace init):
+2. **Generate session identity**:
+   - Generate a session ID (UUID v4): `python3 -c "import uuid; print(str(uuid.uuid4()))"`
+   - Generate a session name: `YYYYMMDD_HHMMSS_<branch-slug>` (e.g., `20260426_143052_user-management-api`)
+   - The session name is used for the directory name (human-readable, sorted chronologically)
+
+3. **Branch creation** (before worktree):
    - Check current branch with `git branch --show-current`
-   - If on `main` or `master`: create and checkout `on-loop/<slugified-prompt>` (lowercase, hyphens, max 50 chars)
-   - If already on a feature branch: stay on it
+   - If on `main` or `master`: create branch `on-loop/<slugified-prompt>` (lowercase, `[a-z0-9-]` only, max 50 chars, must match `^[a-z0-9][a-z0-9-]*[a-z0-9]$`)
+     - `git branch on-loop/<branch-slug>`
+   - If already on a feature branch: use that branch name
+   - Derive `<branch-slug>` from the branch name (strip `on-loop/` prefix if present)
 
-3. Ensure `.on-loop/` is in the project's `.gitignore`:
-   - If `.gitignore` exists but doesn't contain `.on-loop/`, append it
-   - If `.gitignore` doesn't exist, create it with `.on-loop/` as content
+4. **Create git worktree**:
+   - Create worktree: `git worktree add .claude/worktrees/<branch-slug> on-loop/<branch-slug>`
+   - If the worktree already exists for this branch, report error and suggest `git worktree remove` or `/on-loop:clear`
+   - Store the worktree path in state.json as `worktree_path`
+   - All subsequent agent work (SPEC through REVIEW) operates within this worktree directory
 
-4. Initialize the `.on-loop/` workspace:
-   - Create `.on-loop/` directory with `agent-notes/` subdirectory
-   - Create `state.json` with phase `"INIT"`, the user's prompt, and `"branch"` set to current branch name
+5. **Initialize session directory**:
+   - Create `.on-loop/sessions/<session-name>/` with `agent-notes/` subdirectory
+   - Create `state.json` with:
+     - `version`: `"1.1"`
+     - `session_id`: the generated UUID
+     - `phase`: `"INIT"`
+     - `prompt`: the user's prompt
+     - `branch`: the branch name
+     - `worktree_path`: `.claude/worktrees/<branch-slug>`
+     - `session_dir`: `.on-loop/sessions/<session-id>`
    - Create empty `plan.md` and `changes.log`
+   - Update `.on-loop/index.json` (create if missing) — append session entry with `status: "active"`
 
-5. Dispatch the **architect agent** (`agents/architect.md`):
+6. Dispatch the **architect agent** (`agents/architect.md`):
    - Provide the user's prompt
-   - The architect writes the spec to `.on-loop/agent-notes/architect.md`
+   - Agent operates within the worktree directory
+   - The architect writes the spec to `.on-loop/sessions/<session-name>/agent-notes/architect.md`
 
-6. Write `plan.md` based on the architect's spec output.
+7. Write `plan.md` in the session directory based on the architect's spec output.
 
-7. Update `state.json` to phase `"CODE"` and dispatch the **coding agent** (`agents/coding.md`):
+8. Update `state.json` to phase `"CODE"` and dispatch the **coding agent** (`agents/coding.md`):
    - Provide `plan.md` and architect's notes
+   - Agent operates within the worktree directory
 
-8. Update to phase `"TEST"` and dispatch the **testing agent** (`agents/testing.md`):
+9. Update to phase `"TEST"` and dispatch the **testing agent** (`agents/testing.md`):
    - Provide `plan.md`, architect's notes, and coding agent's notes
+   - Agent operates within the worktree directory
    - If tests fail and retries remain (max 3), go back to CODE with test feedback
    - If retries exhausted, record TODOs and continue
 
-9. Update to phase `"SECURITY"` and dispatch the **security agent** (`agents/security.md`):
-   - Provide all prior agent notes
-   - If CRITICAL/HIGH findings and retries remain (max 2), go back to CODE with security feedback
-   - If retries exhausted, record TODOs and continue
+10. Update to phase `"SECURITY"` and dispatch the **security agent** (`agents/security.md`):
+    - Provide all prior agent notes
+    - Agent operates within the worktree directory
+    - If CRITICAL/HIGH findings and retries remain (max 2), go back to CODE with security feedback
+    - If retries exhausted, record TODOs and continue
 
-10. Update to phase `"DOC"` and `"BUILD"` — dispatch **documentation** (`agents/documentation.md`) and **build** (`agents/build.md`) agents in parallel.
+11. Update to phase `"DOC"` and `"BUILD"` — dispatch **documentation** (`agents/documentation.md`) and **build** (`agents/build.md`) agents in parallel.
+    - Both agents operate within the worktree directory
 
-11. Update to phase `"REVIEW"` and dispatch the **reviewer agent** (`agents/reviewer.md`):
+12. Update to phase `"REVIEW"` and dispatch the **reviewer agent** (`agents/reviewer.md`):
     - Provide all agent notes
+    - Agent operates within the worktree directory
     - If REQUEST_CHANGES and retries remain (max 2), go back to CODE with review feedback
     - If retries exhausted, record TODOs and continue
 
-12. Update to phase `"GIT"` (orchestrator handles directly):
+13. Update to phase `"GIT"` (orchestrator handles directly, from within the worktree):
+    - `cd` to the worktree directory
     - Stage all modified/created files from `changes.log` (explicit paths, not `git add -A`)
+    - Also stage the session directory: `.on-loop/sessions/<session-name>/`
     - Commit with a descriptive message summarizing the work, ending with `Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>`
     - Push branch to origin with `-u` flag
     - Create PR via `gh pr create` with title from prompt and body with summary, files changed, test results, security findings, TODOs
     - Store PR URL in `state.json` as `"pr_url"`
 
-13. Update to phase `"COMPLETE"`:
+14. Update to phase `"COMPLETE"`:
+    - Update session state.json with `phase: "COMPLETE"`
+    - Update `.on-loop/index.json` session entry: `status: "complete"`, `completed_at`, `pr_url`
+    - Remove the worktree: `git worktree remove .claude/worktrees/<branch-slug>`
     - Print a summary of what was built
     - List files created/modified
     - Report test results
@@ -96,12 +124,16 @@ When this command is invoked:
 
 If any phase fails unexpectedly:
 - Set `state.json` phase to `"FAILED"` with error details
+- Update `index.json` session status to `"failed"`
+- **Do NOT remove the worktree** (needed for `/on-loop-resume`)
 - Report the failure to the user
 - Suggest using `/on-loop-resume` to continue
 
 ## Important
 
-- All inter-agent communication goes through `.on-loop/` files
+- All inter-agent communication goes through `.on-loop/sessions/<session-name>/` files
 - Only the orchestrator writes `state.json`
-- The `.on-loop/` directory is gitignored and ephemeral
+- The session directory is committed to the repo as an audit log
+- The worktree at `.claude/worktrees/` is gitignored and temporary
 - Each agent reads `shared/AGENT_PERSONA.md` for the Staff Engineer + ISC2 persona
+- Agent file operations happen in the worktree; session state lives in the original repo root

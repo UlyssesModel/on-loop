@@ -5,7 +5,7 @@ description: Manages on-loop phase state transitions, validation, and persistenc
 
 # Loop State Management
 
-This skill manages the `.on-loop/state.json` lifecycle — creation, valid transitions, and persistence.
+This skill manages the session `state.json` lifecycle — creation, valid transitions, and persistence. Each session's state lives at `.on-loop/sessions/<session-name>/state.json` where `<session-name>` is `YYYYMMDD_HHMMSS_<branch-slug>` (e.g., `20260426_143052_user-management-api`).
 
 ## Valid Phase Transitions
 
@@ -34,8 +34,9 @@ FAILED → ANY         (resume)
 
 ```json
 {
-  "version": "1.0",
+  "version": "1.1",
   "loop_id": "<uuid>",
+  "session_id": "<uuid>",
   "prompt": "<user prompt>",
   "phase": "INIT",
   "started_at": "<ISO 8601>",
@@ -51,6 +52,8 @@ FAILED → ANY         (resume)
     "review_to_code": 2
   },
   "branch": null,
+  "worktree_path": ".claude/worktrees/<branch-slug>",
+  "session_dir": ".on-loop/sessions/<session-name>",
   "pr_url": null,
   "phases_completed": [],
   "current_agent": "orchestrator",
@@ -58,6 +61,11 @@ FAILED → ANY         (resume)
   "todos": []
 }
 ```
+
+New fields in v1.1:
+- `session_id`: UUID v4 identifying this session (same as the session directory name)
+- `worktree_path`: Relative path to the git worktree for this session
+- `session_dir`: Relative path to the session log directory under `.on-loop/sessions/`
 
 ### Transition Phase
 

@@ -18,6 +18,10 @@ You are the **Build Agent** — responsible for setting up build tooling, CI/CD 
 
 @shared/AGENT_PERSONA.md
 
+## Session Context
+
+The orchestrator provides the **session directory** path (e.g., `.on-loop/sessions/20260426_143052_user-management-api/`) when dispatching you. All state files, plan, changes log, and agent notes are under this session directory. In these instructions, `<session-dir>` refers to this path. You also operate within a **git worktree** — all feature code reads/writes target the worktree directory.
+
 ## Your Responsibilities
 
 1. **Create** Makefile (or equivalent task runner) with standard targets
@@ -31,10 +35,10 @@ You are the **Build Agent** — responsible for setting up build tooling, CI/CD 
 
 ### 1. Read Context
 
-- Read `.on-loop/state.json` and `.on-loop/plan.md`
-- Read `.on-loop/agent-notes/coding.md` for technology stack details
-- Read `.on-loop/agent-notes/testing.md` for test runner configuration
-- Read `.on-loop/agent-notes/security.md` for security scanning recommendations
+- Read `<session-dir>/state.json` and `<session-dir>/plan.md`
+- Read `<session-dir>/agent-notes/coding.md` for technology stack details
+- Read `<session-dir>/agent-notes/testing.md` for test runner configuration
+- Read `<session-dir>/agent-notes/security.md` for security scanning recommendations
 - Survey the project structure and existing build configuration
 
 ### 2. Makefile
@@ -109,7 +113,7 @@ Create a Dockerfile following security best practices:
 
 ## Output
 
-Write to `.on-loop/agent-notes/build.md`:
+Write to `<session-dir>/agent-notes/build.md`:
 
 ```markdown
 # Build Agent Notes
@@ -135,4 +139,4 @@ Write to `.on-loop/agent-notes/build.md`:
 - <What reviewer should check regarding build setup>
 ```
 
-Append to `.on-loop/changes.log` for each file created or modified.
+Append to `<session-dir>/changes.log` for each file created or modified.

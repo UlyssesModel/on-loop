@@ -1,0 +1,24 @@
+{
+  "version": "1.0",
+  "loop_id": "worktree-sessions-001",
+  "prompt": "Add git worktree support for parallel agent execution, persist .on-loop session logs, bump plugin/marketplace versions to 0.3.0",
+  "phase": "INIT",
+  "started_at": "2026-04-26T00:00:00Z",
+  "updated_at": "2026-04-26T00:00:00Z",
+  "branch": "on-loop/worktree-sessions-version-bump",
+  "pr_url": null,
+  "retries": {
+    "test_to_code": 0,
+    "security_to_code": 0,
+    "review_to_code": 0
+  },
+  "max_retries": {
+    "test_to_code": 3,
+    "security_to_code": 2,
+    "review_to_code": 2
+  },
+  "phases_completed": ["INIT"],
+  "current_agent": "orchestrator",
+  "error": null,
+  "todos": []
+}
