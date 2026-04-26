@@ -38,7 +38,7 @@ Determine the current session by checking:
 
 For each step locked by the current session:
 1. Read the step's status
-2. Check if `.on-loop/agent-notes/` has any notes from the current execution
+2. Check if the session's agent-notes directory (`.on-loop/sessions/<session-name>/agent-notes/`) has any notes from the current execution
 3. Determine the state of the step:
    - **Completed but not yet marked**: Mark it complete
    - **In-progress with partial work**: Commit WIP
@@ -49,7 +49,7 @@ For each step locked by the current session:
 If there are uncommitted changes:
 
 1. Check `git status` for modified/new files
-2. Read `.on-loop/changes.log` if it exists for context
+2. Read the session's `changes.log` (`.on-loop/sessions/<session-name>/changes.log`) if it exists for context
 3. Stage all modified files related to the current step (explicit paths, not `git add -A`)
 4. Commit with message: `wip(<feature-slug>): phase <N> step <M> - pausing work`
    - End with `Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>`
@@ -91,7 +91,7 @@ Write a handoff summary to `roadmap/.state/<feature-slug>-handoff.md`:
 ### Phase <N>, Step <M>: <Title>
 - **Status**: <what was done>
 - **Files modified**: <list>
-- **Agent notes**: <summary from .on-loop/agent-notes/ if available>
+- **Agent notes**: <summary from <session-dir>/agent-notes/ if available>
 - **What remains**: <what the next session should do>
 
 ## Recommendations for Next Session
@@ -128,7 +128,7 @@ If the session has no active locks:
 
 ### Uncommitted Changes Unrelated to Roadmap
 
-If `git status` shows changes not tracked in `.on-loop/changes.log`:
+If `git status` shows changes not tracked in `<session-dir>/changes.log`:
 - Warn the user about untracked changes
 - Do NOT commit them automatically
 - Suggest the user handles them manually

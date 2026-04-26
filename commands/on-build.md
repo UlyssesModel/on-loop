@@ -20,20 +20,23 @@ Standalone build/CI setup using the build agent.
 
 1. Read the user's target argument. If no argument, set up build infrastructure for the entire project.
 
-2. Create a minimal `.on-loop/` workspace if one doesn't exist:
+2. Generate a session name: `YYYYMMDD_HHMMSS_build-<slugified-target>` (e.g., `20260426_143052_build-entire-project`)
+
+3. Create a session directory `.on-loop/sessions/<session-name>/`:
    - `state.json` with phase `"BUILD"` and the target as prompt
    - Empty `agent-notes/` directory
+   - Update `.on-loop/index.json` (create if missing)
 
-3. Survey the project:
+4. Survey the project:
    - Identify language(s) and framework(s)
    - Check for existing build configuration
    - Identify testing framework
    - Check for existing CI/CD configuration
 
-4. Dispatch the **build agent** (`agents/build.md`):
+5. Dispatch the **build agent** (`agents/build.md`):
    - Provide the target scope and project context
 
-5. When complete, display:
+6. When complete, update `.on-loop/index.json` session status to `"complete"` and display:
    - Summary of build infrastructure created
    - Makefile targets available
    - CI pipeline configuration

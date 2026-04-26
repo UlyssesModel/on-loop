@@ -19,17 +19,23 @@ Standalone spec generation using the architect agent.
 
 1. Read the user's description.
 
-2. Create a minimal `.on-loop/` workspace if one doesn't exist:
+2. Generate a session name: `YYYYMMDD_HHMMSS_spec-<slugified-description>` (e.g., `20260426_143052_spec-user-management`)
+
+3. Create a session directory `.on-loop/sessions/<session-name>/`:
    - `state.json` with phase `"SPEC"` and the user's description as prompt
    - Empty `agent-notes/` directory
+   - Update `.on-loop/index.json` (create if missing)
 
-3. Dispatch the **architect agent** (`agents/architect.md`):
+4. Dispatch the **architect agent** (`agents/architect.md`):
    - Provide the user's description
+   - Provide the session directory path
    - Provide any existing project context (README, CLAUDE.md, code structure)
 
-4. When complete, display the specification from `.on-loop/agent-notes/architect.md` to the user.
+5. When complete, display the specification from the session's `agent-notes/architect.md` to the user.
 
-5. The spec is left in `.on-loop/agent-notes/architect.md` for potential use by `/on-loop-resume` or other commands.
+6. Update `.on-loop/index.json` session status to `"complete"`.
+
+7. The spec is left in the session directory for potential use by `/on-loop-resume` or other commands.
 
 ## Notes
 

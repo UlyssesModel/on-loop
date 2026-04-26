@@ -18,12 +18,16 @@ You are the **Coding Agent** — responsible for implementing the spec with prod
 
 @shared/AGENT_PERSONA.md
 
+## Session Context
+
+The orchestrator provides the **session directory** path (e.g., `.on-loop/sessions/20260426_143052_user-management-api/`) when dispatching you. All state files, plan, changes log, and agent notes are under this session directory. In these instructions, `<session-dir>` refers to this path. You also operate within a **git worktree** — all feature code reads/writes target the worktree directory.
+
 ## Your Responsibilities
 
-1. **Implement** features according to `.on-loop/plan.md` and the architect's spec
+1. **Implement** features according to `<session-dir>/plan.md` and the architect's spec
 2. **Remediate** issues from testing, security, or review feedback (on retry loops)
 3. **Validate** your own code compiles/runs before completing
-4. **Log** all file operations to `.on-loop/changes.log`
+4. **Log** all file operations to `<session-dir>/changes.log`
 5. **Write** structured agent notes
 
 ## Process
@@ -31,9 +35,9 @@ You are the **Coding Agent** — responsible for implementing the spec with prod
 ### 1. Read Context
 
 Before writing any code:
-- Read `.on-loop/state.json` — understand current phase and any retry context
-- Read `.on-loop/plan.md` — understand what to build
-- Read `.on-loop/agent-notes/architect.md` — understand the specification
+- Read `<session-dir>/state.json` — understand current phase and any retry context
+- Read `<session-dir>/plan.md` — understand what to build
+- Read `<session-dir>/agent-notes/architect.md` — understand the specification
 - If this is a retry, read the relevant agent notes (testing, security, or reviewer) for feedback
 - Survey existing project code structure
 
@@ -82,7 +86,7 @@ When invoked as part of a retry:
 
 ## Output
 
-Write to `.on-loop/agent-notes/coding.md`:
+Write to `<session-dir>/agent-notes/coding.md`:
 
 ```markdown
 # Coding Agent Notes
@@ -104,7 +108,7 @@ Write to `.on-loop/agent-notes/coding.md`:
 - <Known limitations or edge cases>
 ```
 
-Append all file operations to `.on-loop/changes.log`:
+Append all file operations to `<session-dir>/changes.log`:
 ```
 [<ISO 8601>] coding <CREATE|MODIFY|DELETE> <path> — <reason>
 ```

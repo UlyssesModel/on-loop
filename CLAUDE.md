@@ -4,10 +4,10 @@ Spec-driven SDLC plugin that orchestrates specialist agents through a full devel
 
 ## Commands
 
-- `/on-loop <prompt>` — Run full SDLC loop (spec → code → test → security → docs → build → review → git)
-- `/on-loop-status` — Check current loop progress
-- `/on-loop-resume [--from=phase]` — Resume an interrupted loop
-- `/on-loop:clear` — Clean up workspace, switch to main, pull latest
+- `/on-loop <prompt>` — Run full SDLC loop (spec -> code -> test -> security -> docs -> build -> review -> git)
+- `/on-loop-status` — Check current loop progress and list all sessions
+- `/on-loop-resume [--from=phase] [--session=<id>]` — Resume an interrupted loop
+- `/on-loop:clear [--include-logs]` — Clean up worktrees, optionally remove session logs, switch to main
 - `/on-loop:main-resolve` — Pull main, merge into current branch, resolve conflicts
 - `/on-spec <description>` — Standalone spec generation
 - `/on-test <target>` — Standalone test generation
@@ -25,17 +25,33 @@ Spec-driven SDLC plugin that orchestrates specialist agents through a full devel
 
 ## Architecture
 
-All agents communicate through the `.on-loop/` workspace directory (gitignored):
+Each `/on-loop` session operates in a **git worktree** at `.claude/worktrees/<branch-slug>/`, allowing multiple sessions to run concurrently without interfering with each other or the user's working directory.
+
+### Session Logs
+
+Session state is persisted under `.on-loop/sessions/<YYYYMMDD_HHMMSS_branch-slug>/`:
 - `state.json` — Phase tracking (only orchestrator writes)
 - `plan.md` — Implementation plan (all agents read)
 - `changes.log` — Append-only file modification log
 - `agent-notes/<agent>.md` — Structured output per agent
 
+The session index at `.on-loop/index.json` tracks all sessions.
+
+Session directories are committed to the repo as an audit log.
+
+### Worktrees
+
+Worktrees at `.claude/worktrees/` are gitignored and temporary:
+- Created during INIT
+- Used for all agent work (SPEC through REVIEW)
+- Commits and pushes happen from the worktree (GIT phase)
+- Removed on COMPLETE, left in place on FAILED (for resume)
+
 ## Agent Roster
 
 | Agent | Role |
 |-------|------|
-| orchestrator | Pipeline control, quality gates, retry logic |
+| orchestrator | Pipeline control, quality gates, retry logic, worktree/session lifecycle |
 | architect | Spec generation, ADRs, system design |
 | coding | Implementation with security-first practices |
 | testing | Unit, integration, and E2E tests |
@@ -50,7 +66,10 @@ All agents operate as Staff Engineers with ISC2 certifications targeting regulat
 
 ## Workspace Convention
 
-The `.on-loop/` directory is ephemeral and gitignored. Never commit its contents. Each `/on-loop` invocation initializes a fresh workspace.
+- `.on-loop/` — Persistent session logs, committed to repo
+- `.on-loop/index.json` — Session manifest
+- `.on-loop/sessions/<YYYYMMDD_HHMMSS_slug>/` — Per-session state, plan, changes, agent notes
+- `.claude/worktrees/` — Temporary git worktrees (gitignored)
 
 ## Roadmap Convention
 
@@ -59,7 +78,7 @@ The `roadmap/` directory is persistent and committed to the repo. It contains:
 - `roadmap/.state/<feature>.json` — State tracking per feature (phase/step status, locks)
 - `roadmap/.state/_global.json` — Cross-session coordination (active sessions, global locks)
 
-Multiple sessions can work on the same feature concurrently using `/on-continue`. File-based locking with TTL prevents conflicts.
+Multiple sessions can work on the same feature concurrently using `/on-continue`. Each session gets its own worktree and session directory. File-based locking with TTL prevents conflicts.
 
 ## Skills
 

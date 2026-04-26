@@ -7,13 +7,15 @@ description: Defines pass/fail criteria for phase transitions in the on-loop pip
 
 This skill defines the quality criteria that must be met before transitioning between phases.
 
+All paths below use `<session-dir>` to refer to the active session directory (e.g., `.on-loop/sessions/20260426_143052_user-management-api/`).
+
 ## Gate: SPEC → PLAN
 
 **Check**: Architect agent notes exist and contain a valid specification.
 
 | Criteria | Required |
 |----------|----------|
-| `.on-loop/agent-notes/architect.md` exists | Yes |
+| `<session-dir>/agent-notes/architect.md` exists | Yes |
 | Specification has functional requirements | Yes |
 | Specification has non-functional requirements | Yes |
 | Security considerations documented | Yes |
@@ -27,7 +29,7 @@ This skill defines the quality criteria that must be met before transitioning be
 
 | Criteria | Required |
 |----------|----------|
-| `.on-loop/plan.md` has content | Yes |
+| `<session-dir>/plan.md` has content | Yes |
 | Tasks are listed with assignments | Yes |
 | Constraints documented | Yes |
 
@@ -39,7 +41,7 @@ This skill defines the quality criteria that must be met before transitioning be
 
 | Criteria | Required |
 |----------|----------|
-| `.on-loop/agent-notes/coding.md` exists | Yes |
+| `<session-dir>/agent-notes/coding.md` exists | Yes |
 | Files created/modified listed in `changes.log` | Yes |
 | No CRITICAL issues self-reported | Yes |
 | Code compiles/parses without errors | Yes |
@@ -52,7 +54,7 @@ This skill defines the quality criteria that must be met before transitioning be
 
 | Criteria | Required |
 |----------|----------|
-| `.on-loop/agent-notes/testing.md` exists | Yes |
+| `<session-dir>/agent-notes/testing.md` exists | Yes |
 | All tests pass (zero failures) | Yes |
 | Happy path tests exist | Yes |
 | Error path tests exist | Yes |
@@ -66,7 +68,7 @@ This skill defines the quality criteria that must be met before transitioning be
 
 | Criteria | Required |
 |----------|----------|
-| `.on-loop/agent-notes/security.md` exists | Yes |
+| `<session-dir>/agent-notes/security.md` exists | Yes |
 | No CRITICAL findings | Yes |
 | No unmitigated HIGH findings | Yes |
 | OWASP Top 10 review completed | Yes |
@@ -80,8 +82,8 @@ This skill defines the quality criteria that must be met before transitioning be
 
 | Criteria | Required |
 |----------|----------|
-| `.on-loop/agent-notes/documentation.md` exists | Yes |
-| `.on-loop/agent-notes/build.md` exists | Yes |
+| `<session-dir>/agent-notes/documentation.md` exists | Yes |
+| `<session-dir>/agent-notes/build.md` exists | Yes |
 | README exists or was updated | Recommended |
 | CI configuration exists | Recommended |
 
@@ -93,7 +95,7 @@ This skill defines the quality criteria that must be met before transitioning be
 
 | Criteria | Required |
 |----------|----------|
-| `.on-loop/agent-notes/reviewer.md` exists | Yes |
+| `<session-dir>/agent-notes/reviewer.md` exists | Yes |
 | Verdict is `APPROVE` | Yes |
 | No CRITICAL issues | Yes |
 

@@ -21,23 +21,29 @@ Standalone security audit using the security agent.
 
 1. Read the user's target argument. If no argument, audit the entire project.
 
-2. Create a minimal `.on-loop/` workspace if one doesn't exist:
+2. Generate a session name: `YYYYMMDD_HHMMSS_security-<slugified-target>` (e.g., `20260426_143052_security-src-auth`)
+
+3. Create a session directory `.on-loop/sessions/<session-name>/`:
    - `state.json` with phase `"SECURITY"` and the target as prompt
    - Empty `agent-notes/` directory
+   - Update `.on-loop/index.json` (create if missing)
 
-3. Dispatch the **security agent** (`agents/security.md`):
+4. Dispatch the **security agent** (`agents/security.md`):
    - Provide the target scope
+   - Provide the session directory path
    - Provide project context (dependencies, configuration, architecture)
 
-4. When complete, display:
+5. When complete, display:
    - Summary of security posture
    - OWASP Top 10 findings (if any)
    - STRIDE analysis results
-   - All findings sorted by severity (CRITICAL → LOW)
+   - All findings sorted by severity (CRITICAL -> LOW)
    - Compliance notes
    - Dependency audit results
 
-5. The findings are left in `.on-loop/agent-notes/security.md`.
+6. Update `.on-loop/index.json` session status to `"complete"`.
+
+7. The findings are left in the session's `agent-notes/security.md`.
 
 ## Notes
 

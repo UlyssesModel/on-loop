@@ -21,20 +21,23 @@ Standalone code review using the reviewer agent.
 
 1. Read the user's target argument. If no argument, review all uncommitted changes or recent commits.
 
-2. Create a minimal `.on-loop/` workspace if one doesn't exist:
+2. Generate a session name: `YYYYMMDD_HHMMSS_review-<slugified-target>` (e.g., `20260426_143052_review-recent-changes`)
+
+3. Create a session directory `.on-loop/sessions/<session-name>/`:
    - `state.json` with phase `"REVIEW"` and the target as prompt
    - Empty `agent-notes/` directory
+   - Update `.on-loop/index.json` (create if missing)
 
-3. Determine the review scope:
+4. Determine the review scope:
    - If a file/directory: review that code
    - If no argument: use `git diff` to find recent changes and review those
    - Read the code to be reviewed
 
-4. Dispatch the **reviewer agent** (`agents/reviewer.md`):
+5. Dispatch the **reviewer agent** (`agents/reviewer.md`):
    - Provide the target scope and code
    - Provide project context (conventions, existing patterns)
 
-5. When complete, display:
+6. When complete, update `.on-loop/index.json` session status to `"complete"` and display:
    - Verdict (APPROVE or REQUEST_CHANGES)
    - Review checklist results
    - Findings sorted by severity

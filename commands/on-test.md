@@ -20,19 +20,22 @@ Standalone test generation using the testing agent.
 
 1. Read the user's target argument.
 
-2. Create a minimal `.on-loop/` workspace if one doesn't exist:
+2. Generate a session name: `YYYYMMDD_HHMMSS_test-<slugified-target>` (e.g., `20260426_143052_test-src-api-handlers`)
+
+3. Create a session directory `.on-loop/sessions/<session-name>/`:
    - `state.json` with phase `"TEST"` and the target as prompt
    - Empty `agent-notes/` directory
+   - Update `.on-loop/index.json` (create if missing)
 
-3. If the target is a file or directory path:
+4. If the target is a file or directory path:
    - Read the source code to understand what needs testing
    - Identify the testing framework already in use (if any)
 
-4. Dispatch the **testing agent** (`agents/testing.md`):
+5. Dispatch the **testing agent** (`agents/testing.md`):
    - Provide the target and source code context
    - Provide existing test patterns in the project for consistency
 
-5. When complete:
+6. When complete, update `.on-loop/index.json` session status to `"complete"`, then:
    - Display test results (pass/fail counts)
    - Display any issues found
    - Show the test files created

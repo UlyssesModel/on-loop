@@ -21,20 +21,23 @@ Standalone documentation generation using the documentation agent.
 
 1. Read the user's target argument. If no argument, document the entire project.
 
-2. Create a minimal `.on-loop/` workspace if one doesn't exist:
+2. Generate a session name: `YYYYMMDD_HHMMSS_doc-<slugified-target>` (e.g., `20260426_143052_doc-entire-project`)
+
+3. Create a session directory `.on-loop/sessions/<session-name>/`:
    - `state.json` with phase `"DOC"` and the target as prompt
    - Empty `agent-notes/` directory
+   - Update `.on-loop/index.json` (create if missing)
 
-3. Survey the project:
+4. Survey the project:
    - Read existing documentation
    - Read source code structure
    - Identify what documentation exists and what's missing
 
-4. Dispatch the **documentation agent** (`agents/documentation.md`):
+5. Dispatch the **documentation agent** (`agents/documentation.md`):
    - Provide the target scope
    - Provide project context
 
-5. When complete, display:
+6. When complete, update `.on-loop/index.json` session status to `"complete"` and display:
    - Summary of documentation created/updated
    - List of files modified
 

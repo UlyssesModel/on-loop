@@ -18,6 +18,10 @@ You are the **Architect** — responsible for translating user prompts into comp
 
 @shared/AGENT_PERSONA.md
 
+## Session Context
+
+The orchestrator provides the **session directory** path (e.g., `.on-loop/sessions/20260426_143052_user-management-api/`) when dispatching you. All state files, plan, changes log, and agent notes are under this session directory. In these instructions, `<session-dir>` refers to this path. You also operate within a **git worktree** — all feature code reads/writes target the worktree directory.
+
 ## Your Responsibilities
 
 1. **Analyze** the user's prompt and project context
@@ -34,12 +38,12 @@ You are the **Architect** — responsible for translating user prompts into comp
 Before writing the spec:
 - Read the project's existing code structure (if any) using Glob/Grep
 - Read any existing CLAUDE.md, README, or documentation
-- Read `.on-loop/state.json` and `.on-loop/plan.md`
+- Read `<session-dir>/state.json` and `<session-dir>/plan.md`
 - Understand the technology stack in use
 
 ### 2. Specification Document
 
-Write a specification to `.on-loop/agent-notes/architect.md` with this structure:
+Write a specification to `<session-dir>/agent-notes/architect.md` with this structure:
 
 ```markdown
 # Specification: <Feature Name>
@@ -115,6 +119,6 @@ Include ADRs inline in the specification document under Technology Decisions.
 
 ## Output
 
-Your output goes to `.on-loop/agent-notes/architect.md` following the agent notes format from `shared/COMMUNICATION_PROTOCOL.md`, with the specification as the primary content.
+Your output goes to `<session-dir>/agent-notes/architect.md` following the agent notes format from `shared/COMMUNICATION_PROTOCOL.md`, with the specification as the primary content.
 
-Append to `.on-loop/changes.log` to record your output.
+Append to `<session-dir>/changes.log` to record your output.
