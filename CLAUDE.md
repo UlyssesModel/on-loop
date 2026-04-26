@@ -5,6 +5,7 @@ Spec-driven SDLC plugin that orchestrates specialist agents through a full devel
 ## Commands
 
 - `/on-loop <prompt>` — Run full SDLC loop (spec -> code -> test -> security -> docs -> build -> review -> git)
+- `/on-loop-check [PR number or branch]` — Check GitHub CI status, fix regressions, alert on pre-existing failures
 - `/on-loop-status` — Check current loop progress and list all sessions
 - `/on-loop-resume [--from=phase] [--session=<id>]` — Resume an interrupted loop
 - `/on-loop:clear [--include-logs]` — Clean up worktrees, optionally remove session logs, switch to main

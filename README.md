@@ -56,6 +56,7 @@ Clone or copy into your project and reference it in your project's Claude Code c
 | Command | Description |
 |---------|-------------|
 | `/on-loop <prompt>` | Run full SDLC loop with all agents |
+| `/on-loop-check [PR number or branch]` | Check GitHub CI status, fix regressions, alert on pre-existing failures |
 | `/on-loop-status` | Check progress of current and past sessions |
 | `/on-loop-resume [--from=phase] [--session=<id>]` | Resume an interrupted loop |
 | `/on-loop:clear [--include-logs]` | Clean up worktrees, optionally remove session logs |
@@ -212,12 +213,12 @@ Each runs in its own worktree — no conflicts.
 
 ```
 on-loop/
-├── .claude-plugin/plugin.json   # Plugin metadata (v0.3.0)
+├── .claude-plugin/plugin.json   # Plugin metadata (v0.4.0)
 ├── .on-loop/                    # Session logs (committed to repo)
 │   ├── index.json               # Session manifest
 │   └── sessions/                # Per-session state and agent notes
 ├── hooks/hooks.json             # Stop + PostToolUse hooks
-├── commands/                    # 15 user-invocable commands
+├── commands/                    # 16 user-invocable commands
 ├── agents/                      # 8 specialist agent definitions
 ├── skills/                      # Loop state + quality gate + roadmap skills
 ├── shared/                      # Shared persona, protocols, standards
