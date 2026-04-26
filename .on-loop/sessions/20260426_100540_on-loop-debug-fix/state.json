@@ -1,0 +1,27 @@
+{
+  "version": "1.1",
+  "loop_id": "1e04bac7-1e23-486b-8de1-74fb322611e4",
+  "session_id": "1e04bac7-1e23-486b-8de1-74fb322611e4",
+  "prompt": "Create /on-loop-debug-fix: dual-mode debug command (log ingestion + user prompt) with smart orchestration scaling, works in current worktree, handles .env from repo root, multi-source logs (docker/kubectl/MCP/thanos/loki), docker optimization for fast cycles",
+  "phase": "GIT",
+  "started_at": "2026-04-26T10:05:40Z",
+  "updated_at": "2026-04-26T10:05:40Z",
+  "retries": {
+    "test_to_code": 0,
+    "security_to_code": 0,
+    "review_to_code": 0
+  },
+  "max_retries": {
+    "test_to_code": 3,
+    "security_to_code": 2,
+    "review_to_code": 2
+  },
+  "branch": "on-loop/on-loop-debug-fix",
+  "worktree_path": ".claude/worktrees/on-loop-debug-fix",
+  "session_dir": ".on-loop/sessions/20260426_100540_on-loop-debug-fix",
+  "pr_url": null,
+  "phases_completed": ["INIT", "SPEC", "PLAN"],
+  "current_agent": "coding",
+  "error": null,
+  "todos": []
+}
