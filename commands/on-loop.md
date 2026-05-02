@@ -29,7 +29,7 @@ Launches the **orchestrator agent** which drives the following pipeline:
 7. **DOC + BUILD** — Documentation and build agents run in parallel
 8. **REVIEW** — Reviewer agent performs final code review (retries up to 2x)
 9. **GIT** — Commit all changes from worktree, push branch, create PR
-10. **COMPLETE** — Summary of everything built with PR link, worktree cleanup
+10. **COMPLETE** — Summary of everything built with PR link (worktree left in place)
 
 ## Instructions
 
@@ -112,7 +112,7 @@ When this command is invoked:
 14. Update to phase `"COMPLETE"`:
     - Update session state.json with `phase: "COMPLETE"`
     - Update `.on-loop/index.json` session entry: `status: "complete"`, `completed_at`, `pr_url`
-    - Remove the worktree: `git worktree remove .claude/worktrees/<branch-slug>`
+    - **Do NOT remove the worktree** — leave it in place for `/on-loop-continue` or manual use. Use `/on-loop:clear` to clean up worktrees.
     - Print a summary of what was built
     - List files created/modified
     - Report test results
