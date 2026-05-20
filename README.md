@@ -78,6 +78,29 @@ Clone or copy into your project and reference it in your project's Claude Code c
 | `/on-continue [feature-slug]` | Pick up next available step and execute through agent pipeline |
 | `/on-pause [feature-slug]` | Release locks, commit WIP, write handoff summary |
 
+## Safe release tagging
+
+On 2026-05-20, untracked `.on-loop/sessions/` files caused `git pull` to abort silently (git refuses to overwrite untracked paths). The local branch was left one commit behind `origin/main`. The developer did not notice, signed the tag, and `v0.2.3` was created against the previous release's commit. The Quay image for v0.2.3 therefore contained v0.2.2 code.
+
+`on-loop-tag` is a pre-flight gate that runs eight checks before invoking `git tag -s`, and writes an immutable NDJSON audit line to `.on-loop/release-log.json` on every outcome (success, refusal, or emergency bypass). The exact precondition of the v0.2.3 incident is caught by checks 5 and 6.
+
+```bash
+# Normal — all eight checks must pass
+on-loop-tag v0.6.2 -m "release: v0.6.2"
+
+# Dry run — check only, no tag, no audit line
+on-loop-tag v0.6.2 -m "release: v0.6.2" --check
+
+# Emergency bypass — all checks still run; failures become warnings
+on-loop-tag v0.6.2 -m "hotfix" --force --reason "CI down, hotfix for prod INC-4892"
+```
+
+After a successful tag, push manually: `git push origin v0.6.2`
+
+See [`bin/on-loop-tag.md`](bin/on-loop-tag.md) for the full manual: all eight checks, exit codes, audit log schema, `--force` policy, security considerations, and install trade-offs.
+
+Installed to `~/.local/bin/on-loop-tag` by `setup/fedora-bootstrap.sh`.
+
 ## Agents
 
 | Agent | Model | Role |

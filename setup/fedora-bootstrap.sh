@@ -26,7 +26,9 @@ sudo dnf install -y --best \
   python3 \
   nodejs \
   npm \
-  gh
+  gh \
+  bats \
+  util-linux
 
 if ! command -v claude >/dev/null 2>&1; then
   echo "==> Installing Claude Code (sudo npm install -g)"
@@ -54,6 +56,34 @@ if ! claude plugin list 2>/dev/null | grep -q '^\s*❯ on-loop@on-loop-marketpla
 else
   echo "    (already installed)"
 fi
+
+echo "==> Installing on-loop-tag CLI to ~/.local/bin"
+mkdir -p "$HOME/.local/bin"
+SCRIPT_SRC="$REPO_DIR/bin/on-loop-tag"
+SCRIPT_DST="$HOME/.local/bin/on-loop-tag"
+
+if [[ ! -x "$SCRIPT_SRC" ]]; then
+  echo "ERROR: $SCRIPT_SRC missing or not executable" >&2
+  exit 1
+fi
+
+# Symlink so repo edits propagate; remove any stale link/file first (idempotent)
+if [[ -L "$SCRIPT_DST" || -e "$SCRIPT_DST" ]]; then
+  rm -f "$SCRIPT_DST"
+fi
+ln -s "$SCRIPT_SRC" "$SCRIPT_DST"
+echo "    linked $SCRIPT_DST -> $SCRIPT_SRC"
+
+# PATH check — non-fatal warning
+case ":$PATH:" in
+  *":$HOME/.local/bin:"*) echo "    PATH OK (~/.local/bin already on PATH)" ;;
+  *) cat >&2 <<EOF
+WARNING: ~/.local/bin is not on PATH. Add this to ~/.bashrc:
+    export PATH="\$HOME/.local/bin:\$PATH"
+Then re-source: source ~/.bashrc
+EOF
+    ;;
+esac
 
 echo
 echo "==> Verification"
