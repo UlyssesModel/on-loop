@@ -1,7 +1,8 @@
 #!/usr/bin/env bats
 # tests/test_on_loop_tag.bats
 #
-# 15 bats test cases for bin/on-loop-tag (Layer 1).
+# 16 bats test cases for bin/on-loop-tag (Layer 1).
+# Tests 1-15 cover architect §7.6; test 16 covers Round-1 face-off Findings 1+2.
 #
 # Spec reference: architect §7.6 (test list), §7.1-§7.5 (fixture + shim design).
 # Coding deviations: coding.md D-B (git tag -s shim), D-C (--check runs 1-7 only),
@@ -385,4 +386,45 @@ teardown() {
     (.script_version | type == "string") and (.script_version | length > 0)
   ' <<< "$last_line"
   [ "$status" -eq 0 ]
+}
+
+# ===========================================================================
+# Test 16 — tag is pinned to the verified SHA and the audit `commit` field
+#           equals the tag's commit-target
+# Round-1 Findings 1 + 2 (face-off review):
+#   1. `git tag -s` must be invoked with an explicit commit (the SHA captured
+#      after the seven pre-flight checks), not "whatever HEAD is at signing
+#      time". A wrong HEAD between checks and signing was the v0.2.3-class
+#      failure mode this script exists to prevent; pre-fix, the script tagged
+#      `HEAD` implicitly and could not detect HEAD movement.
+#   2. The audit log's `commit` field must name the SHA the tag actually
+#      points at, not a fresh `rev-parse HEAD` read at audit-append time.
+#
+# Both invariants are observable from outside: the tag's commit-target
+# (`git rev-parse "<tag>^{commit}"`) must equal the SHA observed *before*
+# script invocation, and the audit `commit` field must equal the tag's
+# commit-target byte-for-byte.
+# ===========================================================================
+@test "tag is pinned to verified SHA and audit commit equals tag target" {
+  # Capture the SHA the script will lock in.
+  local pre_sha
+  pre_sha=$(git -C "$REPO_DIR" rev-parse HEAD)
+  [ -n "$pre_sha" ]
+
+  run env \
+    BATS_VERSION="${BATS_VERSION:-1.0}" \
+    ON_LOOP_TAG_FORCE_TTY_INPUT=y \
+    "$ON_LOOP_TAG_BIN" v0.0.99 -m "pin test"
+
+  [ "$status" -eq 0 ]
+
+  # The tag's commit-target must equal the pre-invocation HEAD SHA.
+  local tag_commit
+  tag_commit=$(git -C "$REPO_DIR" rev-parse "v0.0.99^{commit}")
+  [ "$tag_commit" = "$pre_sha" ]
+
+  # The audit `commit` field must equal the tag's commit-target.
+  local audit_commit
+  audit_commit=$(last_audit_line | jq -r '.commit')
+  [ "$audit_commit" = "$tag_commit" ]
 }

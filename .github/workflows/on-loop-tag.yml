@@ -2,7 +2,7 @@
 #
 # CI for bin/on-loop-tag — safe release-tagging script.
 #
-# Runs shellcheck (SAST) and the 15-case bats-core test suite on every push
+# Runs shellcheck (SAST) and the 16-case bats-core test suite on every push
 # and on pull requests targeting main.  The workflow is path-filtered so it
 # only executes when files relevant to the script or its tests change.
 #

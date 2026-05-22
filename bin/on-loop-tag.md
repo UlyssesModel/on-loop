@@ -132,14 +132,14 @@ Every line contains these 13 fields:
 | `ts` | string (ISO 8601 UTC) | Timestamp of the invocation |
 | `user` | string | `id -un` (login name); see PII note below |
 | `tag` | string | The requested tag name (logged even on refusal) |
-| `commit` | string or null | Full SHA of HEAD at invocation time; null if no repo context |
+| `commit` | string or null | For `action: tagged`, the tag's commit-target (`git rev-parse "<tag>^{commit}"`) — i.e. the SHA the tag actually points at. For refusals and errors, the SHA of HEAD at audit-emit time. Null if no repo context. |
 | `action` | string enum | `tagged` / `refused` / `error` |
 | `force` | boolean | `true` if `--force` was set |
 | `reason` | string or null | Non-null only when `force` is `true`; JSON-encoded |
 | `checks_passed` | array of strings | Tokens that passed (empty array if checks not reached) |
 | `checks_failed` | array of strings | Tokens that failed (empty array if none) |
 | `checks_skipped` | array of strings | Tokens auto-skipped (e.g. `user_confirmed` under `--force`) |
-| `refused_reason` | string or null | Present when `action` is `refused`: `checks_failed` / `user_declined` / `argv_error` |
+| `refused_reason` | string or null | Present when `action` is `refused`: `checks_failed` / `user_declined` / `race_detected` / `race_recheck_failed` / `head_moved` / `argv_error` |
 | `error_code` | integer or null | Present when `action` is `error`; matches exit code |
 | `script_version` | string | From `.claude-plugin/plugin.json`; `"unknown"` if file or `jq` is unavailable (see Security notes) |
 
@@ -248,12 +248,17 @@ chmod 0750 .on-loop/
 
 **`~/.local/bin` write permissions.** The script resolves `git` and `flock` via `$PATH` rather than hardcoded paths (required for the bats test shim to work). If `~/.local/bin` is writable by an untrusted user, that user can place a malicious `git` shim earlier on the path. Ensure `~/.local/bin` is owned by and writable only by you (`chmod 0755 ~/.local/bin`).
 
+**HEAD pinning between pre-flight and signing.** The SHA shown at the confirmation prompt is the commit `git tag -s` will sign. The script captures HEAD once after the seven pre-flight checks complete and passes that SHA explicitly to `git tag -s "<TAG>" "<SHA>"`. If HEAD moves between the prompt and the signing call (concurrent `git reset`/`checkout`/`commit` from another shell, or a hook), the script refuses with `refused_reason: head_moved` and exit code 1 — applies in `--force` mode too (correctness, not bypass-able, same policy as the `tag_not_exists` race recheck).
+
 ---
 
 ## Failure modes and FAQ
 
 **The script was interrupted (Ctrl-C) before the tag was created.**
 The `INT`/`TERM` trap fires, emits an audit line with `action: error, error_code: 6`, and exits 6. No tag is created. The audit line is best-effort; if the interrupt happened before repo resolution, no audit line is written.
+
+**The script was interrupted during the post-tag critical section (between `git tag -s` returning and the success audit line being written).**
+The `INT`/`TERM` trap detects this via the `TRAP_ARMED` flag and prints a `CRITICAL:` line to stderr instead of writing a contradictory `action: error` audit. The tag may exist on disk without a matching audit entry. Reconcile `.on-loop/release-log.json` manually by appending a line describing the outcome, then commit the file. This window is short (a single `flock` + `printf` to a local file) but auditable when it happens.
 
 **The script was interrupted after `git tag -s` but before the audit line was written.**
 The tag exists locally. The audit line does not. Exit 9 (`E_AUDIT_FAILED`) will appear on stderr with a `CRITICAL` prefix. Do not delete the tag; it is the source of truth. Reconcile `.on-loop/release-log.json` manually by appending a line that captures what happened, then commit the file.

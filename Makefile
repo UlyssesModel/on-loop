@@ -17,7 +17,7 @@ SHELL := /bin/bash
 help:
 	@printf '%-20s %s\n' "Target" "Description"
 	@printf '%-20s %s\n' "------" "-----------"
-	@printf '%-20s %s\n' "test"      "Run bats test suite (15 cases)"
+	@printf '%-20s %s\n' "test"      "Run bats test suite (16 cases)"
 	@printf '%-20s %s\n' "lint"      "Run shellcheck on bin/on-loop-tag"
 	@printf '%-20s %s\n' "check"     "Smoke-check bin/on-loop-tag --version"
 	@printf '%-20s %s\n' "install"   "Symlink bin/on-loop-tag to ~/.local/bin/"
