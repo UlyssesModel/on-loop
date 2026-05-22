@@ -312,6 +312,10 @@ emit_audit() {
 # would CONTRADICT a possibly-pending success audit and violate the
 # one-audit-line-per-outcome invariant. Print CRITICAL to stderr instead and
 # leave manual reconciliation as the documented recovery (manual:118, FAQ).
+#
+# Invoked indirectly via `trap` (see main: `trap 'audit_error_signal; exit ...' INT TERM`).
+# The static analyzer cannot see the dispatch path; suppress unreachable-code noise.
+# shellcheck disable=SC2317
 audit_error_signal() {
   # Disable further traps to avoid re-entry.
   trap - INT TERM EXIT
@@ -970,6 +974,9 @@ main() {
     fi
 
     do_tag_and_audit "true" "$REASON"
+    # do_tag_and_audit always exits; the return is a defensive guard against a
+    # future refactor that might change that contract.
+    # shellcheck disable=SC2317
     return
   fi
 
@@ -1006,6 +1013,8 @@ main() {
   if check_user_confirmed; then
     # User said yes.
     do_tag_and_audit "false" ""
+    # Same defensive-return rationale as the --force branch above.
+    # shellcheck disable=SC2317
     return
   else
     # User declined — clean exit 0 (architect §3 check 8, §4.4 row 2).
