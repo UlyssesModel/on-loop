@@ -101,6 +101,8 @@ See [`bin/on-loop-tag.md`](bin/on-loop-tag.md) for the full manual: all eight ch
 
 Installed to `~/.local/bin/on-loop-tag` by `setup/fedora-bootstrap.sh`.
 
+This tool implements the **canonical-state-verification iteration** of [mise-en-place Principle 5 (Justified Action / Five Whys), §5 Forward](https://github.com/UlyssesModel/mise-en-place/blob/main/skills/mise-en-place/references/contract.md#5-justified-action) — applied to `git tag` operations. The eight pre-flight checks are the reference pattern for destructive-op tooling; the discipline generalizes to schema migrations, deployments, and any irreversible operation. See mise-en-place v0.5.1 (2026-05-21) for the architectural authority.
+
 ## Agents
 
 | Agent | Model | Role |
